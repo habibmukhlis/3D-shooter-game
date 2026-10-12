@@ -1,0 +1,53 @@
+# ============================================
+# Unreal Engine 5 .gitignore for Project IGI
+# ============================================
+
+# Built Binaries and Intermediate Engine Files
+Binaries/*
+Build/*
+DerivedDataCache/*
+Intermediate/*
+Saved/*
+
+# Platform Specific Builds & Packages
+Cooked/*
+Package/*
+StagedBuilds/*
+
+# IDE and Project Files
+.vs/
+.vscode/
+.idea/
+.fleet/
+*.VC.db
+*.opensdf
+*.opendb
+*.sdf
+*.sln
+*.suo
+*.xcodeproj
+*.xcworkspace
+
+# Crash Logs, Backups, and Temporary Files
+*.log
+*.bak
+*.tmp
+*.orig
+*.patch
+
+# OS and Editor Artifacts
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.blend1
+*.blend2
+
+# Godot migration / export scratch scripts
+optimize_map_for_godot.py
+__pycache__/
+*.pyc
+
+# Heavy third-party marketplace showcase demo maps & sample lighting (>100MB GitHub limit)
+Content/STF/Pack03-LandscapePro/Maps/open_world_LSP_v2.umap
+Content/STF/Pack03-LandscapePro/Maps/*BuiltData.uasset
+Content/VigilanteContent/**/Level/*BuiltData.uasset

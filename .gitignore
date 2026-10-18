@@ -51,3 +51,7 @@ __pycache__/
 Content/STF/Pack03-LandscapePro/Maps/open_world_LSP_v2.umap
 Content/STF/Pack03-LandscapePro/Maps/*BuiltData.uasset
 Content/VigilanteContent/**/Level/*BuiltData.uasset
+node_modules/
+dist/
+*.log
+

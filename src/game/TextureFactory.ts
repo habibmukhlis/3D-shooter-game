@@ -1,7 +1,122 @@
 import * as THREE from 'three';
+import { AssetLoader } from './AssetLoader';
 
 export class TextureFactory {
   private static cache: Map<string, THREE.CanvasTexture> = new Map();
+
+  public static getConcreteMaterial(): THREE.MeshStandardMaterial {
+    const diff = AssetLoader.getTexture('concrete_wall_diff', 4, 2);
+    const rough = AssetLoader.getTexture('concrete_wall_rough', 4, 2);
+    const norm = AssetLoader.getTexture('trim_norm', 4, 2);
+
+    if (diff) {
+      return new THREE.MeshStandardMaterial({
+        map: diff,
+        roughnessMap: rough ?? undefined,
+        normalMap: norm ?? undefined,
+        normalScale: new THREE.Vector2(0.6, 0.6),
+        roughness: 0.82,
+        metalness: 0.1,
+      });
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map: this.getConcreteWallTexture(),
+      roughness: 0.8,
+      metalness: 0.1,
+    });
+  }
+
+  public static getWarehouseMaterial(): THREE.MeshStandardMaterial {
+    const diff = AssetLoader.getTexture('trim_diff', 6, 3);
+    const norm = AssetLoader.getTexture('trim_norm', 6, 3);
+    const rough = AssetLoader.getTexture('trim_rough', 6, 3);
+
+    if (diff) {
+      return new THREE.MeshStandardMaterial({
+        map: diff,
+        normalMap: norm ?? undefined,
+        roughnessMap: rough ?? undefined,
+        normalScale: new THREE.Vector2(0.8, 0.8),
+        roughness: 0.5,
+        metalness: 0.65,
+      });
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map: this.getWarehouseMetalTexture(),
+      roughness: 0.5,
+      metalness: 0.6,
+    });
+  }
+
+  public static getMetalTrimMaterial(): THREE.MeshStandardMaterial {
+    return this.getWarehouseMaterial();
+  }
+
+  public static getWalkwayMaterial(repeatX = 6, repeatY = 6): THREE.MeshStandardMaterial {
+    const walkDiff = AssetLoader.getTexture('walkway_diff', repeatX, repeatY);
+    const walkNorm = AssetLoader.getTexture('walkway_norm', repeatX, repeatY);
+    const walkRough = AssetLoader.getTexture('walkway_rough', repeatX, repeatY);
+    if (walkDiff) {
+      return new THREE.MeshStandardMaterial({
+        map: walkDiff,
+        normalMap: walkNorm ?? undefined,
+        roughnessMap: walkRough ?? undefined,
+        normalScale: new THREE.Vector2(0.7, 0.7),
+        roughness: 0.85,
+        metalness: 0.15,
+      });
+    }
+    return new THREE.MeshStandardMaterial({
+      color: 0x3f434a,
+      roughness: 0.85,
+      metalness: 0.15,
+    });
+  }
+
+  public static getGroundMaterial(
+    env: 'night_depot' | 'daylight_radar' | 'mountain_dawn' | 'harbor_storm'
+  ): THREE.MeshStandardMaterial {
+    const walkDiff = AssetLoader.getTexture('walkway_diff', 28, 28);
+    const walkNorm = AssetLoader.getTexture('walkway_norm', 28, 28);
+    const walkRough = AssetLoader.getTexture('walkway_rough', 28, 28);
+
+    if ((env === 'night_depot' || env === 'harbor_storm') && walkDiff) {
+      return new THREE.MeshStandardMaterial({
+        map: walkDiff,
+        normalMap: walkNorm ?? undefined,
+        roughnessMap: walkRough ?? undefined,
+        normalScale: new THREE.Vector2(0.7, 0.7),
+        roughness: env === 'harbor_storm' ? 0.65 : 0.88,
+        metalness: env === 'harbor_storm' ? 0.18 : 0.08,
+      });
+    }
+
+    if (env === 'daylight_radar') {
+      return new THREE.MeshStandardMaterial({
+        map: this.getDesertGroundTexture(),
+        normalMap: walkNorm ?? undefined,
+        normalScale: new THREE.Vector2(0.35, 0.35),
+        roughness: 0.95,
+      });
+    }
+
+    if (env === 'mountain_dawn') {
+      return new THREE.MeshStandardMaterial({
+        map: this.getMountainRockTexture(),
+        normalMap: walkNorm ?? undefined,
+        normalScale: new THREE.Vector2(0.85, 0.85),
+        roughness: 0.9,
+        metalness: 0.15,
+      });
+    }
+
+    return new THREE.MeshStandardMaterial({
+      map: this.getGroundTexture(),
+      roughness: 0.9,
+    });
+  }
 
   public static getGroundTexture(): THREE.CanvasTexture {
     if (this.cache.has('ground')) return this.cache.get('ground')!;
@@ -28,8 +143,10 @@ export class TextureFactory {
     ctx.strokeStyle = '#181b1f';
     ctx.lineWidth = 14;
     ctx.beginPath();
-    ctx.moveTo(100, 0); ctx.lineTo(110, 512);
-    ctx.moveTo(160, 0); ctx.lineTo(170, 512);
+    ctx.moveTo(100, 0);
+    ctx.lineTo(110, 512);
+    ctx.moveTo(160, 0);
+    ctx.lineTo(170, 512);
     ctx.stroke();
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -57,7 +174,8 @@ export class TextureFactory {
     ctx.lineWidth = 4;
     ctx.strokeRect(4, 4, 504, 504);
     ctx.beginPath();
-    ctx.moveTo(0, 256); ctx.lineTo(512, 256);
+    ctx.moveTo(0, 256);
+    ctx.lineTo(512, 256);
     ctx.stroke();
 
     // Noise & rain streaks
@@ -140,8 +258,10 @@ export class TextureFactory {
     ctx.lineWidth = 18;
     ctx.strokeStyle = '#2a342b';
     ctx.beginPath();
-    ctx.moveTo(20, 20); ctx.lineTo(236, 236);
-    ctx.moveTo(236, 20); ctx.lineTo(20, 236);
+    ctx.moveTo(20, 20);
+    ctx.lineTo(236, 236);
+    ctx.moveTo(236, 20);
+    ctx.lineTo(20, 236);
     ctx.stroke();
 
     // Stenciled military marking
@@ -150,7 +270,7 @@ export class TextureFactory {
     ctx.textAlign = 'center';
     ctx.fillText('7.62x39mm', 128, 120);
     ctx.font = '14px monospace';
-    ctx.fillText('СССР 1984', 128, 145);
+    ctx.fillText('LOT 1984-B', 128, 145);
 
     const texture = new THREE.CanvasTexture(canvas);
     this.cache.set('crate', texture);

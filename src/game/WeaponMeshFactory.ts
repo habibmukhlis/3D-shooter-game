@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WeaponId } from '../types/game';
+import { AssetLoader } from './AssetLoader';
 
 export class WeaponMeshFactory {
   public static createWeaponMesh(weaponId: WeaponId): THREE.Group {
@@ -25,65 +26,109 @@ export class WeaponMeshFactory {
       roughness: 0.5,
       metalness: 0.15,
     });
+    const gloveMat = new THREE.MeshStandardMaterial({
+      color: 0x1c211e,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+    const sleeveMat = new THREE.MeshStandardMaterial({
+      color: 0x2b352c,
+      roughness: 0.8,
+      metalness: 0.05,
+    });
 
     if (weaponId === 'ak74m') {
-      // Main receiver
-      const receiverGeo = new THREE.BoxGeometry(0.08, 0.11, 0.42);
-      const receiver = new THREE.Mesh(receiverGeo, metalDark);
-      group.add(receiver);
+      const glbRifle = AssetLoader.cloneNormalizedModel('assault_rifle', {
+        castShadow: false,
+        receiveShadow: false,
+      });
 
-      // Top cover
-      const coverGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.38, 8);
-      const cover = new THREE.Mesh(coverGeo, metalBlack);
-      cover.rotation.x = Math.PI / 2;
-      cover.position.set(0, 0.06, -0.01);
-      group.add(cover);
+      if (glbRifle) {
+        // Measure natural bounding box of the GLB rifle and orient its longest axis along -Z
+        const rawBox = new THREE.Box3().setFromObject(glbRifle);
+        const rawSize = new THREE.Vector3();
+        rawBox.getSize(rawSize);
+        if (rawSize.x > rawSize.z) {
+          glbRifle.rotation.y = -Math.PI / 2;
+        }
+        glbRifle.updateMatrixWorld(true);
+        const alignedBox = new THREE.Box3().setFromObject(glbRifle);
+        const alignedSize = new THREE.Vector3();
+        const alignedCenter = new THREE.Vector3();
+        alignedBox.getSize(alignedSize);
+        alignedBox.getCenter(alignedCenter);
 
-      // Long Barrel
-      const barrelGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 8);
-      const barrel = new THREE.Mesh(barrelGeo, metalDark);
-      barrel.rotation.x = Math.PI / 2;
-      barrel.position.set(0, 0.04, -0.42);
-      group.add(barrel);
+        const desiredLength = 0.78;
+        const scale = desiredLength / Math.max(alignedSize.z, 0.001);
+        glbRifle.scale.multiplyScalar(scale);
+        glbRifle.position.set(
+          -alignedCenter.x * scale,
+          -alignedCenter.y * scale - 0.02,
+          -alignedCenter.z * scale - 0.15
+        );
+        group.add(glbRifle);
+      } else {
+        // Procedural fallback AK-74M
+        const receiverGeo = new THREE.BoxGeometry(0.08, 0.11, 0.42);
+        const receiver = new THREE.Mesh(receiverGeo, metalDark);
+        group.add(receiver);
 
-      // Muzzle brake
-      const muzzleGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.09, 8);
-      const muzzle = new THREE.Mesh(muzzleGeo, metalBlack);
-      muzzle.rotation.x = Math.PI / 2;
-      muzzle.position.set(0, 0.04, -0.67);
-      group.add(muzzle);
+        const coverGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.38, 8);
+        const cover = new THREE.Mesh(coverGeo, metalBlack);
+        cover.rotation.x = Math.PI / 2;
+        cover.position.set(0, 0.06, -0.01);
+        group.add(cover);
 
-      // Handguard
-      const handguardGeo = new THREE.BoxGeometry(0.075, 0.09, 0.26);
-      const handguard = new THREE.Mesh(handguardGeo, polymerWood);
-      handguard.position.set(0, 0.035, -0.28);
-      group.add(handguard);
+        const barrelGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.45, 8);
+        const barrel = new THREE.Mesh(barrelGeo, metalDark);
+        barrel.rotation.x = Math.PI / 2;
+        barrel.position.set(0, 0.04, -0.42);
+        group.add(barrel);
 
-      // Curved Magazine
-      const magGeo = new THREE.BoxGeometry(0.05, 0.26, 0.1);
-      const mag = new THREE.Mesh(magGeo, magOrange);
-      mag.position.set(0, -0.15, -0.06);
-      mag.rotation.x = 0.25;
-      group.add(mag);
+        const muzzleGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.09, 8);
+        const muzzle = new THREE.Mesh(muzzleGeo, metalBlack);
+        muzzle.rotation.x = Math.PI / 2;
+        muzzle.position.set(0, 0.04, -0.67);
+        group.add(muzzle);
 
-      // Pistol grip
-      const gripGeo = new THREE.BoxGeometry(0.05, 0.18, 0.07);
-      const grip = new THREE.Mesh(gripGeo, polymerWood);
-      grip.position.set(0, -0.12, 0.16);
-      grip.rotation.x = -0.4;
-      group.add(grip);
+        const handguardGeo = new THREE.BoxGeometry(0.075, 0.09, 0.26);
+        const handguard = new THREE.Mesh(handguardGeo, polymerWood);
+        handguard.position.set(0, 0.035, -0.28);
+        group.add(handguard);
 
-      // Front sight post
-      const frontSightGeo = new THREE.BoxGeometry(0.012, 0.04, 0.02);
-      const frontSight = new THREE.Mesh(frontSightGeo, metalBlack);
-      frontSight.position.set(0, 0.075, -0.58);
-      group.add(frontSight);
+        const magGeo = new THREE.BoxGeometry(0.05, 0.26, 0.1);
+        const mag = new THREE.Mesh(magGeo, magOrange);
+        mag.position.set(0, -0.15, -0.06);
+        mag.rotation.x = 0.25;
+        group.add(mag);
 
-      // Rear sight notch
-      const rearSightGeo = new THREE.BoxGeometry(0.025, 0.02, 0.04);
-      const rearSight = new THREE.Mesh(rearSightGeo, metalBlack);
-      rearSight.position.set(0, 0.08, -0.15);
-      group.add(rearSight);
+        const gripGeo = new THREE.BoxGeometry(0.05, 0.18, 0.07);
+        const grip = new THREE.Mesh(gripGeo, polymerWood);
+        grip.position.set(0, -0.12, 0.16);
+        grip.rotation.x = -0.4;
+        group.add(grip);
+
+        const frontSightGeo = new THREE.BoxGeometry(0.012, 0.04, 0.02);
+        const frontSight = new THREE.Mesh(frontSightGeo, metalBlack);
+        frontSight.position.set(0, 0.075, -0.58);
+        group.add(frontSight);
+
+        const rearSightGeo = new THREE.BoxGeometry(0.025, 0.02, 0.04);
+        const rearSight = new THREE.Mesh(rearSightGeo, metalBlack);
+        rearSight.position.set(0, 0.08, -0.15);
+        group.add(rearSight);
+      }
+
+      // First-person tactical support hand & sleeve
+      const leftHand = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.06, 0.1), gloveMat);
+      leftHand.position.set(-0.02, -0.04, -0.26);
+      group.add(leftHand);
+
+      const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.34), sleeveMat);
+      leftArm.position.set(-0.12, -0.12, -0.08);
+      leftArm.rotation.y = 0.45;
+      leftArm.rotation.x = 0.25;
+      group.add(leftArm);
 
       // Default hold offset
       group.position.set(0.18, -0.2, -0.42);
@@ -168,6 +213,36 @@ export class WeaponMeshFactory {
       group.add(stock);
 
       group.position.set(0.18, -0.22, -0.45);
+    } else if (weaponId === 'rpg7') {
+      // RPG-7 Launcher Tube + Wooden Heat Shield + PG-7V Warhead
+      const tubeMat = new THREE.MeshStandardMaterial({ color: 0x2c3527, metalness: 0.7, roughness: 0.4 });
+      const warheadMat = new THREE.MeshStandardMaterial({ color: 0x3b4d2b, metalness: 0.5, roughness: 0.45 });
+
+      const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.85, 12), tubeMat);
+      tube.rotation.x = Math.PI / 2;
+      tube.position.set(0, 0.04, -0.25);
+      group.add(tube);
+
+      const heatShield = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.048, 0.34, 12), polymerWood);
+      heatShield.rotation.x = Math.PI / 2;
+      heatShield.position.set(0, 0.04, -0.12);
+      group.add(heatShield);
+
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.062, 0.24, 12), warheadMat);
+      cone.rotation.x = -Math.PI / 2;
+      cone.position.set(0, 0.04, -0.78);
+      group.add(cone);
+
+      const grip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.06), polymerWood);
+      grip.position.set(0, -0.08, -0.18);
+      grip.rotation.x = -0.25;
+      group.add(grip);
+
+      const sight = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.065, 0.025), metalBlack);
+      sight.position.set(0, 0.095, -0.45);
+      group.add(sight);
+
+      group.position.set(0.22, -0.2, -0.38);
     } else {
       // Tactical Combat Knife
       const bladeGeo = new THREE.BoxGeometry(0.01, 0.05, 0.25);

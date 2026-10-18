@@ -230,7 +230,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <div><strong className="text-emerald-300">N:</strong> Night Vision Goggles</div>
                   <div><strong className="text-emerald-300">B:</strong> Tactical Binoculars</div>
                   <div><strong className="text-emerald-300">Tab / M:</strong> Satellite PDA Map</div>
-                  <div><strong className="text-emerald-300">1 - 4:</strong> Weapon Selection</div>
+                  <div><strong className="text-emerald-300">1 - 5:</strong> Weapon Selection</div>
+                  <div><strong className="text-emerald-300">G / X:</strong> Frag Grenade / C4</div>
                   <div><strong className="text-emerald-300">ESC:</strong> Pause & Settings</div>
                 </div>
               </div>

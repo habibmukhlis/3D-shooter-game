@@ -16,6 +16,8 @@ import {
   Sunrise,
   ArrowRight,
   KeyRound,
+  X,
+  Circle,
 } from 'lucide-react';
 import { soundManager } from '../audio/SoundManager';
 import {
@@ -254,8 +256,15 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                   {/* Direct Launch / Action Area on Card */}
                   {isUnlocked ? (
                     <div className="mt-3 pt-2 border-t border-emerald-950 flex items-center justify-between gap-2">
-                      <div className="text-[10px] text-emerald-400/80">
-                        {isSelected ? '● CURRENTLY SELECTED' : 'CLICK TO SELECT & PREVIEW'}
+                      <div className="text-[10px] text-emerald-400/80 flex items-center gap-1.5">
+                        {isSelected ? (
+                          <>
+                            <Circle className="w-2.5 h-2.5 fill-emerald-400 text-emerald-400" aria-hidden="true" />
+                            <span>CURRENTLY SELECTED</span>
+                          </>
+                        ) : (
+                          <span>CLICK TO SELECT & PREVIEW</span>
+                        )}
                       </div>
                       <button
                         type="button"
@@ -271,7 +280,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
                         }`}
                       >
                         <Play className="w-3 h-3 fill-current" />
-                        <span>{isDeploying ? 'DEPLOYING...' : isSelected ? 'DEPLOY OPERATION ▶' : 'DEPLOY NOW'}</span>
+                        <span>{isDeploying ? 'DEPLOYING...' : isSelected ? 'DEPLOY OPERATION' : 'DEPLOY NOW'}</span>
+                        {isSelected && <ArrowRight className="w-3 h-3" aria-hidden="true" />}
                       </button>
                     </div>
                   ) : (
@@ -431,16 +441,17 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               </div>
               <button
                 onClick={() => setShowControlsHelp(false)}
-                className="text-slate-400 hover:text-white cursor-pointer px-2 py-1 text-sm"
+                aria-label="Close Field Manual"
+                className="text-slate-400 hover:text-white cursor-pointer p-1 rounded hover:bg-slate-900 transition"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs text-slate-300">
               <div className="p-2.5 bg-black/50 rounded border border-slate-800">
                 <strong className="text-emerald-400">W, A, S, D</strong>
-                <div className="text-[11px] text-slate-400 mt-0.5">Tactical Movement</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Tactical Movement & Ladder Climb</div>
               </div>
               <div className="p-2.5 bg-black/50 rounded border border-slate-800">
                 <strong className="text-emerald-400">Left Shift</strong>

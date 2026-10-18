@@ -233,6 +233,8 @@ export class GameEngine {
   private footstepTimer = 0;
   private extractHoldTimer = 0;
   private isExtracting = false;
+  private lastPointerLockExit = 0;
+  private cleanupListeners: (() => void)[] = [];
 
   constructor(
     container: HTMLElement,
@@ -627,15 +629,42 @@ export class GameEngine {
   private setupInputListeners() {
     const handleCanvasClick = () => {
       if (!this.isPointerLocked) {
-        this.renderer.domElement.requestPointerLock();
+        const elapsed = performance.now() - this.lastPointerLockExit;
+        if (elapsed < 1100) {
+          // Inside browser security throttle period after exiting pointer lock
+          return;
+        }
+        try {
+          const promise = this.renderer.domElement.requestPointerLock() as unknown as Promise<void> | undefined;
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch(() => {
+              // Gracefully handle browser security error / cooldown
+            });
+          }
+        } catch {
+          // Gracefully ignore sync pointer lock error
+        }
       }
     };
     this.renderer.domElement.addEventListener('click', handleCanvasClick);
+    this.cleanupListeners.push(() => this.renderer.domElement.removeEventListener('click', handleCanvasClick));
 
     const handlePointerLockChange = () => {
-      this.isPointerLocked = document.pointerLockElement === this.renderer.domElement;
+      const locked = document.pointerLockElement === this.renderer.domElement;
+      this.isPointerLocked = locked;
+      if (!locked) {
+        this.lastPointerLockExit = performance.now();
+      }
     };
     document.addEventListener('pointerlockchange', handlePointerLockChange);
+    this.cleanupListeners.push(() => document.removeEventListener('pointerlockchange', handlePointerLockChange));
+
+    const handlePointerLockError = () => {
+      this.isPointerLocked = false;
+      this.lastPointerLockExit = performance.now();
+    };
+    document.addEventListener('pointerlockerror', handlePointerLockError);
+    this.cleanupListeners.push(() => document.removeEventListener('pointerlockerror', handlePointerLockError));
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!this.isPointerLocked) return;
@@ -647,6 +676,7 @@ export class GameEngine {
       this.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.pitch));
     };
     document.addEventListener('mousemove', handleMouseMove);
+    this.cleanupListeners.push(() => document.removeEventListener('mousemove', handleMouseMove));
 
     const handleMouseDown = (e: MouseEvent) => {
       if (!this.isPointerLocked) return;
@@ -677,6 +707,11 @@ export class GameEngine {
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
     window.addEventListener('contextmenu', handleContextMenu);
+    this.cleanupListeners.push(() => {
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('contextmenu', handleContextMenu);
+    });
 
     const handleKeyDown = (e: KeyboardEvent) => {
       this.keys[e.code] = true;
@@ -687,7 +722,8 @@ export class GameEngine {
       if (e.code === 'Digit4') this.switchWeapon(3);
 
       if (e.code === 'KeyR') this.triggerReload();
-      if ((e.code === 'KeyF' || e.code === 'KeyE') && this.currentPrompt) this.triggerInteraction();
+      // Only F is for interaction; KeyE is dedicated to tactical Leaning Right!
+      if (e.code === 'KeyF' && this.currentPrompt) this.triggerInteraction();
       if (e.code === 'KeyN') this.toggleNightVision();
       if (e.code === 'KeyB') this.toggleBinoculars();
       if (e.code === 'ControlLeft' || e.code === 'KeyC') {
@@ -697,13 +733,18 @@ export class GameEngine {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       this.keys[e.code] = false;
-      if (e.code === 'KeyF' || e.code === 'KeyE') {
+      // Only F releases exfiltration hold timer
+      if (e.code === 'KeyF') {
         if (!this.isExtracting) this.extractHoldTimer = 0;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    this.cleanupListeners.push(() => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    });
 
     const handleResize = () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
@@ -711,6 +752,7 @@ export class GameEngine {
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     };
     window.addEventListener('resize', handleResize);
+    this.cleanupListeners.push(() => window.removeEventListener('resize', handleResize));
   }
 
   public toggleNightVision() {
@@ -1281,26 +1323,26 @@ export class GameEngine {
       const d = this.playerPos.distanceTo(item.position);
       if (d < minDist) {
         minDist = d;
-        if (item.type === 'ammo') nearestPrompt = 'PRESS [F] / [E] TO COLLECT AMMUNITION';
-        else if (item.type === 'medkit') nearestPrompt = 'PRESS [F] / [E] TO USE COMBAT MEDKIT';
-        else if (item.type === 'briefcase') nearestPrompt = 'PRESS [F] / [E] TO SECURE CLASSIFIED BRIEFCASE';
-        else if (item.type === 'alarm_console') nearestPrompt = 'PRESS [F] / [E] TO HACK SECURITY SIREN TERMINAL';
-        else if (item.type === 'generator') nearestPrompt = 'PRESS [F] / [E] TO SABOTAGE POWER TURBINE GRID';
-        else if (item.type === 'radar_hack') nearestPrompt = 'PRESS [F] / [E] TO UPLOAD TELEMETRY OVERRIDE';
-        else if (item.type === 'silo_override') nearestPrompt = 'PRESS [F] / [E] TO ABORT STRATEGIC MISSILE LAUNCH';
-        else if (item.type === 'bunker_power') nearestPrompt = 'PRESS [F] / [E] TO DISABLE BACKUP DIESEL DYNAMO';
+        if (item.type === 'ammo') nearestPrompt = 'PRESS [F] TO COLLECT AMMUNITION';
+        else if (item.type === 'medkit') nearestPrompt = 'PRESS [F] TO USE COMBAT MEDKIT';
+        else if (item.type === 'briefcase') nearestPrompt = 'PRESS [F] TO SECURE CLASSIFIED INTEL BRIEFCASE';
+        else if (item.type === 'alarm_console') nearestPrompt = 'PRESS [F] TO HACK SECURITY SIREN TERMINAL';
+        else if (item.type === 'generator') nearestPrompt = 'PRESS [F] TO SABOTAGE POWER TURBINE GRID';
+        else if (item.type === 'radar_hack') nearestPrompt = 'PRESS [F] TO UPLOAD TELEMETRY OVERRIDE';
+        else if (item.type === 'silo_override') nearestPrompt = 'PRESS [F] TO ABORT STRATEGIC MISSILE LAUNCH';
+        else if (item.type === 'bunker_power') nearestPrompt = 'PRESS [F] TO DISABLE BACKUP DIESEL DYNAMO';
         else if (item.type === 'extraction') {
           const primaryDone = this.objectives
             .filter((o) => !o.isOptional && o.id !== 'obj_extract')
             .every((o) => o.isCompleted);
           if (this.isExtracting) {
-            nearestPrompt = 'EXFILTRATION IN PROGRESS // RETURNING TO HQ...';
+            nearestPrompt = 'EXFILTRATION IN PROGRESS // RETURNING TO BASE...';
           } else if (primaryDone) {
             if (this.extractHoldTimer > 0) {
               const remaining = Math.max(0, 1.5 - this.extractHoldTimer).toFixed(1);
-              nearestPrompt = `CONFIRMING EXFILTRATION... [HOLD F / E] (${remaining}s)`;
+              nearestPrompt = `CONFIRMING EXFILTRATION... [HOLD F] (${remaining}s)`;
             } else {
-              nearestPrompt = 'HOLD [F] OR [E] (1.5s) TO BOARD EXTRACTION TRANSPORT';
+              nearestPrompt = 'HOLD [F] (1.5s) TO BOARD EXTRACTION TRANSPORT';
             }
           } else {
             nearestPrompt = 'EXTRACTION LOCKED // PRIMARY DIRECTIVES INCOMPLETE';
@@ -1765,7 +1807,7 @@ export class GameEngine {
             .filter((o) => !o.isOptional && o.id !== 'obj_extract')
             .every((o) => o.isCompleted);
 
-          if (primaryDone && (this.keys['KeyF'] || this.keys['KeyE'])) {
+          if (primaryDone && this.keys['KeyF']) {
             this.extractHoldTimer += dt;
             if (this.extractHoldTimer >= 1.5) {
               this.isExtracting = true;
@@ -1899,6 +1941,8 @@ export class GameEngine {
       cancelAnimationFrame(this.animFrameId);
     }
     soundManager.stopBaseSiren();
+    this.cleanupListeners.forEach((cleanup) => cleanup());
+    this.cleanupListeners = [];
     if (this.renderer.domElement.parentElement) {
       this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
     }

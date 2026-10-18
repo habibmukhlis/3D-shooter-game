@@ -208,6 +208,16 @@ export function App() {
   const currentMissionDef =
     CAMPAIGN_MISSIONS.find((m) => m.id === selectedMissionId) || CAMPAIGN_MISSIONS[0];
 
+  const safeExitPointerLock = () => {
+    try {
+      if (typeof document !== 'undefined' && document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    } catch {
+      // Ignored
+    }
+  };
+
   // Global Keyboard Shortcuts (Escape for Pause / Settings, Tab/M for Map)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -217,9 +227,7 @@ export function App() {
         if (gameState === 'playing') {
           e.preventDefault();
           setIsTacticalMapOpen((prev) => {
-            if (!prev && document.pointerLockElement) {
-              document.exitPointerLock();
-            }
+            if (!prev) safeExitPointerLock();
             return !prev;
           });
         }
@@ -234,7 +242,7 @@ export function App() {
         } else {
           setGameState((prev) => {
             if (prev === 'playing') {
-              if (document.pointerLockElement) document.exitPointerLock();
+              safeExitPointerLock();
               return 'paused';
             } else if (prev === 'paused') {
               return 'playing';
@@ -305,11 +313,11 @@ export function App() {
             taggedEnemies={hudData.enemies.filter((e) => e.isTagged && e.alertState !== 'dead')}
             settings={settings}
             onOpenTacticalMap={() => {
-              if (document.pointerLockElement) document.exitPointerLock();
+              safeExitPointerLock();
               setIsTacticalMapOpen(true);
             }}
             onOpenSettings={() => {
-              if (document.pointerLockElement) document.exitPointerLock();
+              safeExitPointerLock();
               setIsSettingsOpen(true);
             }}
             onToggleNightVision={() => engineRef.current?.toggleNightVision()}

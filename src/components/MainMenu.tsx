@@ -456,10 +456,10 @@ export const MainMenu: React.FC<MainMenuProps> = ({
               </div>
               <div className="p-2.5 bg-black/50 rounded border border-slate-800">
                 <strong className="text-emerald-400">Q / E</strong>
-                <div className="text-[11px] text-slate-400 mt-0.5">Tactical Lean Around Corners</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Lean Left (Q) / Lean Right (E)</div>
               </div>
               <div className="p-2.5 bg-black/50 rounded border border-slate-800">
-                <strong className="text-emerald-400">F / E</strong>
+                <strong className="text-emerald-400">F</strong>
                 <div className="text-[11px] text-slate-400 mt-0.5">Interact & Hack (Hold 1.5s to Extract)</div>
               </div>
               <div className="p-2.5 bg-black/50 rounded border border-slate-800">

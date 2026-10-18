@@ -1,26 +1,30 @@
-# Project I.G.I. Remake: Multi-Mission Campaign, Physics Overhaul & Settings System
+# Pre-Deployment Mission Briefing Dossier & WebAudio Tactical Sound Engine
 
-An authentic Cold War tactical stealth simulation featuring a 3-mission campaign roster, full main menu with level indexer and star ratings, robust collision physics preventing clipping and shooting through obstacles, and comprehensive graphics, audio, and control settings accessible from both the main menu and pause screen.
+An interactive pre-mission intelligence briefing system and procedural WebAudio API sound engine that bridges campaign selection and 3D tactical infiltration with mission-specific lore, objectives, strategic hints, weapon loadouts, environmental audio atmospheres, surface-aware footsteps, and real-time volume controls.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> The following directions have been confirmed and synthesized into this blueprint:
+> The following product and UX decisions were confirmed during Phase 1 and govern this implementation:
 
-- **Confirmed Campaign Roster**: 3 distinctive tactical operations:
-  - **Mission 01: Night Infiltration (Supply Depot)** — Moonlit compound, spotlight sweeps, alarm sabotage, intel recovery, and watchtower snipers.
-  - **Mission 02: Daylight Radar (Desert Outpost)** — Bright sunlit communications facility, parabolic radar arrays, long-range guard sightlines, power generator sabotage, and data uplink hijack.
-  - **Mission 03: Mountain Dawn (Bunker Facility)** — Dawn mist, terraced mountain stronghold, heavy sentries, missile silo console override, and rooftop helipad extraction.
-- **Confirmed Menu & Progression**: Full tactical Main Menu with an interactive Level Indexer, classified dossiers, mission unlock progression, and 3-star tactical performance rating (stealth, accuracy, time).
-- **Confirmed Settings Integration**: Unified Settings configuration panel accessible directly from the Main Menu as well as via the in-game Pause screen (`Esc`).
-- **Confirmed Physics & Ballistic Upgrades**: Bounding box capsule-sweeping collision prevents walking through buildings/crates, and dual-raycast muzzle clearance ensures neither players nor enemies can shoot through walls or solid cover.
+- **Confirmed Briefing Flow**: The `MissionBriefingModal` will appear before **every** mission launch (from the Main Menu) and **every** next-mission transition (from the Mission End debriefing screen), transitioning `gameState` through `'briefing'` before starting the 3D engine in `'playing'` mode.
+- **Confirmed Briefing Dossier Scope**:
+  - Mission-specific operational lore (`dossierSummary`), primary and secondary objectives with target coordinates, and strategic field hints (`briefingNotes`).
+  - Tactical reconnaissance telemetry card displaying threat level, time of day, weather conditions, and insertion coordinates.
+  - Interactive starting weapon and equipment loadout overview (inspecting the Combat Knife, Silenced Pistol, AK-74M, Dragunov Sniper, Night Vision, and Binoculars with ballistics specs).
+  - Simulated teletype briefing audio cue with an integrated quick-mute toggle and an abort-to-menu action.
+- **Confirmed WebAudio Sound Engine & Settings Enhancements**:
+  - **Environment-Specific Ambient Soundscapes**: Tailored procedural ambient loops for Night Depot (cold low-pass compound wind & distant transformer hum), Daylight Radar (arid high-frequency desert wind & radar dish sweep pulse), and Mountain Dawn (howling alpine ridge gusts).
+  - **Surface-Aware & Stance-Aware Footsteps**: Distinct procedural footstep synthesis for walking vs. sprinting across concrete, metal grating/watchtowers, and outdoor terrain, while remaining silent when crouched.
+  - **SettingsModal Audio Controls**: Dedicated Master Mute toggle alongside Master, Combat SFX, and Ambient/Siren volume sliders, featuring a live audio preview chime when adjusting levels.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Delivers**: A comprehensive expansion of Project I.G.I. Remake from a single test sandbox into a full-featured tactical stealth game. Players navigate a Cold War command terminal Main Menu, inspect classified mission dossiers, adjust graphics and input sensitivities, and undertake three distinct operational missions with realistic physics, lighting, and AI behavior.
-- **Target Experience**: Methodical, high-stakes tactical infiltration inspired by classic *Project I.G.I.: I'm Going In*. Sneaking past patrol routes, shooting surveillance cameras, sabotaging alarm consoles, neutralizing tower snipers with scoped rifles, and managing recoil behind realistic physical cover.
+- **What It Does**: Replaces the immediate jump from menu selection into 3D rendering with a deliberate, atmospheric pre-mission intelligence briefing screen (`MissionBriefingModal`), while upgrading the procedural WebAudio API synthesizer (`SoundManager`) so every environment, movement stance, weapon shot, alarm siren, and volume adjustment delivers responsive acoustic feedback.
+- **Target Audience / Persona**: Tactical stealth FPS players who rely on pre-mission intelligence (understanding guard sightlines, alarm terminal locations, and weather visibility) and directional/environmental audio cues during infiltration.
+- **Key Value**: Gives each of the three campaign missions a distinct narrative and acoustic identity while ensuring players have complete, immediate control over Master, SFX, and Ambient audio levels.
 
 ---
 
@@ -28,158 +32,99 @@ An authentic Cold War tactical stealth simulation featuring a 3-mission campaign
 
 ### Key User Flows
 
-1. **Title & Operations Hub (Main Menu)**:
-   - High-contrast tactical command terminal with mission dossier selection.
-   - **Level Indexer**: Carousel or grid of 3 missions displaying operational title, time of day (Night / Daylight / Dawn), difficulty, completed star ratings, high score, and unlock status.
-   - **Mission Dossier**: Intel summary, satellite recon snapshot, tactical objectives preview, and primary gear loadout before launching.
-   - **Operations Controls**: "Deploy to Mission", "Operational Settings", and "Controls Guide".
+1. **Mission Launch & Pre-Deployment Briefing (`menu` → `briefing` → `playing`)**:
+   - When the player selects a mission in the Main Menu and clicks **Deploy**, or clicks **Next Mission** after completing an operation, the app enters the `'briefing'` state and presents the `MissionBriefingModal`.
+   - A subtle teletype data-stream sound plays as the mission dossier populates.
+   - The player reviews the **Situation Report (Lore)**, **Primary & Secondary Objectives**, **Strategic Field Hints**, and **Tactical Recon Telemetry** (location, time of day, weather, threat level).
+   - The player can click through the **Interactive Starting Loadout** tabs to inspect weapon damage, suppression status, magnification, and tactical gear before deployment.
+   - Clicking **Start Mission** initializes the 3D WebGL engine and begins the mission-specific ambient soundscape; clicking **Return to Command** aborts back to the Main Menu.
 
-2. **In-Game Experience & Physics Simulation**:
-   - Immersive first-person perspective with authentic weapon models (Combat Knife, Silenced Glock 17-SD, AK-74M, Dragunov SVD sniper with PSO-1 reticle).
-   - Strict physical barriers: walls, security booths, sandbag bunkers, shipping containers, and perimeter fences block movement and stop projectiles.
-   - Muzzle-to-Target Ballistics: Weapons trace bullet trajectories from physical barrel origin to crosshair hit point. If a crate, wall, or corner intervenes, bullet impacts trigger concrete dust or wood sparks with ricochet audio without penetrating solid geometry.
-   - AI Line of Sight: Enemy guards cast unobstructed visual rays; if the player is behind a crate or wall, detection stays at 0% and enemy fire stops immediately upon losing line of sight.
+2. **In-Game Procedural Audio Feedback**:
+   - Upon deployment, the WebAudio engine starts the mission's environmental ambient loop (Night Depot, Daylight Radar, or Mountain Dawn).
+   - Moving across the compound triggers stance-aware and surface-aware footsteps (crisp metallic resonance on watchtowers/catwalks, muted crunch on ground terrain, heavier cadence when sprinting, silent when crouching).
+   - Firing weapons (silenced pistol, assault rifle, sniper rifle, combat knife) and triggering or disabling base alarms route through dedicated SFX and Ambient/Siren gain buses.
 
-3. **In-Game Pause & Configuration Screen (`Esc`)**:
-   - Freezes simulation and pointer lock.
-   - Displays current mission objectives checklist, operational timer, and quick options: "Resume Operation", "Mission Settings", "Restart Operation", and "Abort to Command Menu".
-
-4. **Settings Configuration Panel**:
-   - **Video & Graphics**: Render Quality / Pixel Ratio (0.75x Performance, 1.0x Native, 1.25x Ultra), Shadow Maps (Off / Medium / High), Atmospheric Fog Density (Low / High), Field of View (FOV: 65° to 90°).
-   - **Audio & Comms**: Master Volume slider, SFX Volume slider, Ambient Siren/Alarm Volume, Audio Mute toggle.
-   - **Controls & Input**: Mouse Look Sensitivity (0.2x to 3.0x), Invert Y-Axis toggle, Weapon Bobbing toggle, Reticle Style (Dot, Crosshair, Classic I.G.I. Circle).
-   - Saved automatically to browser `localStorage` and shared seamlessly between Main Menu and gameplay.
+3. **Audio Configuration & Live Preview (`SettingsModal`)**:
+   - Opening the Settings Modal (from the Main Menu or In-Game Pause Menu) and selecting the **Audio** tab presents a **Master Audio Mute** toggle alongside **Master Volume**, **Ballistics & Combat SFX Volume**, and **Environment & Siren Ambience Volume** sliders.
+   - Adjusting any slider or toggling mute immediately updates the WebAudio `GainNode` buses, persists to `localStorage`, and triggers a non-intrusive acoustic test pulse so the user can hear the exact volume level in real time.
 
 ### Visual Identity & Theme
 
-- **Palette**: Cold War tactical HUD theme. Dominant deep obsidian canvas (`#090d16` / `#0a0f1d`), crisp titanium text (`#f1f5f9`), tactical amber/gold (`#f59e0b`) and radar emerald (`#10b981`) accents, alert crimson (`#ef4444`).
-- **Daylight vs. Night Moods**:
-  - *Mission 1 (Night)*: Deep navy-grey fog, moonlit directional lighting, warm incandescent spotlight cones.
-  - *Mission 2 (Daylight)*: Crisp desert sunshine with warm directional sun, sharp building shadows, high-visibility guard sightlines.
-  - *Mission 3 (Dawn)*: Golden-hour rim lighting with cool blue ground mist and bunker spotlights.
-- **Typography**: Neo-grotesque sans (`Plus Jakarta Sans`) for interface controls paired with tabular monospace numerals (`JetBrains Mono` / `tabular-nums`) for coordinates, compass degrees, ammunition counts, and stopwatches.
+- **Aesthetic Direction**: Cold War classified satellite command terminal—utilitarian, high-contrast, and legible.
+- **Color Palette & Surface Hierarchy (60-30-10 Discipline)**:
+  - **60% Dominant Canvas**: Deep obsidian slate (`#090d16` / `bg-slate-950/95`) with subtle backdrop blur over the viewport.
+  - **30% Structural Surfaces**: Subdued tactical panels (`bg-slate-900/70`) separated by `1px` hairline borders (`border-slate-800`) and generous internal padding (`24px` outer container padding, `16px` inner grid gaps).
+  - **10% Accent Budget**: Radar emerald (`#10b981`) for primary interactive actions and confirmed states, tactical amber (`#f59e0b`) for strategic hints and elevated threat indicators, and crimson (`#ef4444`) strictly for high-threat warnings or muted audio states.
+- **Typography & Hierarchy**:
+  - **Display & Section Headings**: Geometric sans (`Plus Jakarta Sans`), clean title-case hierarchy, `text-wrap: balance`.
+  - **Telemetry & Numerical Readouts**: Tabular monospace (`JetBrains Mono` / `tabular-nums`) for mission timestamps, coordinates, weapon ballistic specs, and volume percentages.
+  - **Zero-Pill & Anti-Slop Discipline**: Metadata (coordinates, weather, time of day, weapon slots) is rendered as clean unboxed text with `·` or `/` typographic separators, avoiding decorative pulsing dots or code-comment (`//`) headers.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Campaign Generation in MapBuilder**:
-  - *Approach*: Modular environment generator supporting environment types (`night_depot`, `daylight_radar`, `mountain_bunker`) with custom building footprints, radar dishes, satellite terminals, generator units, watchtowers, and bunker tunnels.
-  - *Why*: Allows distinct, authentic mission geometries and lighting conditions without heavyweight asset downloads, running instantly in Vite/WebGL.
-- **Decision 2: Player Bounding Capsule & Physics Sweeping**:
-  - *Approach*: Segmented bounding cylinder with multiple test heights (foot, torso, head) sweeping against all collidable scene bounding boxes (`THREE.Box3`).
-  - *Why*: Completely eliminates clipping through walls or diagonal corner leaks, while allowing smooth stepping over small obstacles and stair ramps.
-- **Decision 3: Weapon Barrel Raycasting for Real Line of Fire**:
-  - *Approach*: Bullet traces originate from the true 3D muzzle location in world space directed toward the reticle focal point, checking for static environment hits before registering enemy damage.
-  - *Why*: Resolves the player issue of "shooting through objects"—if the player is hugging a wall or crouched behind a crate with the gun barrel blocked, bullets strike the obstacle directly in front of them.
-- **Decision 4: Unified Settings Store in `localStorage`**:
-  - *Approach*: Typed settings store with immediate callback dispatching to `GameEngine` (e.g. updating camera FOV, mouse sensitivity multiplier, shadow map resolution, and audio gain nodes).
-  - *Why*: Settings changes take effect immediately without requiring a game restart.
+- **Decision 1: Dedicated `'briefing'` GameState Before Engine Instantiation**:
+  - *Chosen Approach*: Route mission launches through `gameState = 'briefing'` first, and instantiate `new GameEngine(...)` only when the user clicks **Start Mission** inside `MissionBriefingModal`.
+  - *Why*: Prevents enemy patrols, mission timers, and pointer-lock requests from running in the background while the player is reading objectives and strategic hints, and guarantees a fresh user gesture to unlock the browser `AudioContext`.
+  - *Alternatives Considered*: Rendering the briefing modal on top of an already-running `GameEngine` instance, which risks background guard detection and premature pointer-lock conflicts.
+- **Decision 2: Procedural WebAudio Synthesis with Multi-Bus Gain Routing**:
+  - *Chosen Approach*: Use native WebAudio API oscillators, biquad filters, and shaped noise buffers routed through three independent gain stages (`masterGain`, `sfxGain`, `ambientGain`).
+  - *Why*: Zero external audio file dependencies or network loading latency, deterministic synthesis for every weapon and surface type, and instant real-time volume/mute response when dragging sliders in `SettingsModal`.
+  - *Alternatives Considered*: Fetching external MP3/WAV assets, which can fail or stall in sandboxed environments.
 
 ---
 
 ## 4. Technical Architecture & Data Strategy
 
+### Architecture & Component Diagram
+
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                          App Container State                           │
-│  (Mode: 'main_menu' | 'playing' | 'paused' | 'debrief', ActiveMission)  │
-└─────────────────────────────────┬──────────────────────────────────────┘
-                                  │
-         ┌────────────────────────┼────────────────────────┐
-         ▼                        ▼                        ▼
-┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
-│    Main Menu     │    │   In-Game HUD    │    │ Settings Modal   │
-│  - Level Indexer │    │  - Compass Tape  │    │  - Video Quality │
-│  - Star Ratings  │    │  - Health/Armor  │    │  - Mouse Sens    │
-│  - Dossier Modal │    │  - Ammo & Weapon │    │  - Master Audio  │
-│  - Launch Button │    │  - Satellite Map │    │  - FOV / Bobbing │
-└──────────────────┘    └─────────┬────────┘    └──────────────────┘
-                                  │
-                                  ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        3D WebGL Game Engine                            │
-│  ┌───────────────────────┐ ┌───────────────────┐ ┌──────────────────┐  │
-│  │   Camera & Controls   │ │ Dynamic Lighting  │ │  Sound Synthesizer│ │
-│  │ - Pointer Lock / Sens │ │ - Sun / Spotlights│ │ - Gunshot & Siren│ │
-│  │ - FOV & Recoil System │ │ - Directional Fog │ │ - Footstep/Reload│ │
-│  └───────────┬───────────┘ └─────────┬─────────┘ └──────────────────┘  │
-│              │                       │                                 │
-│              ▼                       ▼                                 │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                    Physics & Ballistics Engine                   │  │
-│  │ - Multi-point Player Collision Sweeper (No walking through walls)│  │
-│  │ - Muzzle Raycast Clearance (No shooting through cover)           │  │
-│  │ - Dynamic Enemy AI Perception Raycaster (No vision through walls)│  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                  │                                     │
-│                                  ▼                                     │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │              Mission Builder (MapBuilder 3-Level Setup)          │  │
-│  │ - Mission 01: Cold War Depot (Night, Alarms, Perimeter Towers)   │  │
-│  │ - Mission 02: Radar Station (Daylight, Generator, Dish Hack)     │  │
-│  │ - Mission 03: Mountain Silo (Dawn, Terraced Bunkers, Extraction) │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-└────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             App State Controller                            │
+│        (gameState: 'menu' | 'briefing' | 'playing' | 'paused' | ...)        │
+└──────┬──────────────────────────────┬────────────────────────────────┬──────┘
+       │                              │                                │
+       ▼                              ▼                                ▼
+┌──────────────────────┐   ┌──────────────────────────┐   ┌───────────────────┐
+│      MainMenu        │   │   MissionBriefingModal   │   │   SettingsModal   │
+│ - Select Mission     │──▶│ - Mission Lore & Intel   │   │ - Mute Toggle     │
+│ - Open Briefing      │   │ - Primary/Secondary Objs │   │ - Master Slider   │
+└──────────────────────┘   │ - Strategic Field Hints  │   │ - SFX Slider      │
+                           │ - Interactive Loadout    │   │ - Ambient Slider  │
+                           │ - Teletype SFX & Mute    │   │ - Live Test Chime │
+                           └────────────┬─────────────┘   └─────────┬─────────┘
+                                        │                           │
+                          [Start Mission]                           │
+                                        ▼                           ▼
+┌──────────────────────────────────────────────────────┐  ┌───────────────────┐
+│                    3D GameEngine                     │  │   SoundManager    │
+│ - Passes Mission Environment Type on Init            │─▶│  (WebAudio API)   │
+│ - Detects Player Surface (Ground vs. Metal/Tower)    │  │ - Master/SFX/Amb  │
+│ - Triggers Weapon, Footstep, Alarm & Objective Audio │  │   Gain Buses      │
+└──────────────────────────────────────────────────────┘  └───────────────────┘
 ```
 
-### Campaign Missions Specification
+### Data Model & State
 
-| Mission ID | Title & Setting | Objectives | Atmosphere & Time |
-| :--- | :--- | :--- | :--- |
-| **`mission_01`** | **Operation Eagle Eye**<br>Supply Depot & Logistics | 1. Disable Main Security Alarm<br>2. Eliminate 2 Watchtower Snipers<br>3. Steal Encrypted Intel Briefcase<br>4. Extract via South Helipad | Night, Blue Fog (`#0a1020`), Spotlights, Incandescent lamps |
-| **`mission_02`** | **Operation Sunburst**<br>Desert Radar Telemetry Base | 1. Sabotage Power Generator Grid<br>2. Hack Satellite Radar Console<br>3. Eliminate Communications Officer<br>4. Exfiltrate via Desert Gate | High Noon Sun (`#fef08a`), Warm Dust Fog, Long Sightlines |
-| **`mission_03`** | **Operation Iron Dawn**<br>Mountain Silo Stronghold | 1. Breach Perimeter Bunker<br>2. Deactivate Missile Silo Terminal<br>3. Neutralize Base Commander<br>4. Board Extraction Chopper on Roof | Dawn Rimlight (`#fdba74`), Mountain Ridge Mist, Heavy Armor Patrols |
+- **`GameSettings` Extension**:
+  - Includes `isMuted: boolean` alongside `masterVolume` (0–100), `sfxVolume` (0–100), and `ambientVolume` (0–100), persisted in `localStorage` (`igi_game_settings`) and synchronized with `SoundManager` on initialization and every setting change.
+- **`MissionBriefingModal` Props & State**:
+  - Accepts `mission: MissionDefinition`, `onStartMission: () => void`, `onCancel: () => void`, `isMuted: boolean`, and `onToggleMute: () => void`.
+  - Local interactive state `selectedWeaponIdx` (0–5) for inspecting the starting weapons and tactical optics loadout, and a simulated progressive teletype reveal state for the intelligence report.
+- **`SoundManager` Acoustic Profiles**:
+  - `startEnvironmentAmbience(env: 'night_depot' | 'daylight_radar' | 'mountain_dawn')`: Configures filtered noise generators and subtle LFO modulation matching the active mission environment.
+  - `playFootstep(isSprinting: boolean, isCrouching: boolean, surface: 'ground' | 'metal' | 'concrete')`: Adjusts filter resonance and transient pitch based on player elevation/surface collider and movement stance.
+  - `playTeletypeTick()` & `playVolumePreview(channel: 'master' | 'sfx' | 'ambient')`: Provides immediate acoustic feedback during briefing reveal and volume slider adjustments.
 
-### Progression & Settings Data Structure
+### Interactive Component & State Mapping
 
-```typescript
-export interface GameSettings {
-  mouseSensitivity: number; // 0.2 to 3.0 (default 1.0)
-  invertY: boolean;         // default false
-  fov: number;              // 65 to 90 degrees (default 75)
-  weaponBobbing: boolean;   // default true
-  crosshairStyle: 'dot' | 'cross' | 'classic';
-  renderScale: number;      // 0.75, 1.0, 1.25
-  shadows: 'off' | 'medium' | 'high';
-  fogQuality: 'low' | 'high';
-  masterVolume: number;     // 0 to 1 (default 0.8)
-  sfxVolume: number;        // 0 to 1 (default 0.9)
-  ambientVolume: number;    // 0 to 1 (default 0.7)
-  isMuted: boolean;
-}
-
-export interface MissionProgress {
-  missionId: string;
-  unlocked: boolean;
-  completed: boolean;
-  stars: number; // 0 to 3
-  bestTime: number; // in seconds
-  highestScore: number;
-}
-```
-
----
-
-## 5. Execution Steps (Post-Approval)
-
-1. **Mission Configuration & Types (`src/types/game.ts`)**:
-   - Define multi-mission campaign contracts, settings schema, level indexer models, and star rating criteria.
-2. **Audio & Sound Settings Extension (`src/audio/SoundManager.ts`)**:
-   - Add master/sfx/ambient gain control nodes and daylight wind/mountain ambient loops.
-3. **Multi-Environment Map Builder (`src/game/MapBuilder.ts`)**:
-   - Implement environmental archetypes: `night_depot`, `daylight_radar` (parabolic dishes, transformers, sun sky), and `mountain_bunker` (silo covers, concrete bunkers, catwalks).
-   - Tag physical colliders with bounding boxes and surface material types (concrete, metal, wood).
-4. **Physics & Ballistics Hardening (`src/game/GameEngine.ts`)**:
-   - Multi-point bounding cylinder collision preventing clipping through any wall or crate.
-   - Dual-raycast muzzle-clearance ballistic system stopping shots fired into walls or through cover.
-   - Guard line-of-sight raycasts verified against all level colliders.
-   - Mission loader API to reset and initialize selected mission environments, objectives, and guard schedules.
-5. **Main Menu & Level Indexer Component (`src/components/MainMenu.tsx`)**:
-   - High-fidelity Cold War terminal UI with interactive mission carousel/grid, star ratings, tactical dossiers, and launch triggers.
-6. **Settings Panel Component (`src/components/SettingsModal.tsx`)**:
-   - Tabbed or categorized configuration controls (Video, Audio, Controls) with live preview and reset to defaults.
-7. **Pause Menu (`src/components/PauseMenu.tsx`) & In-Game UI Integration (`src/App.tsx`)**:
-   - Seamless switching between Main Menu, Active Mission, Pause Menu with Settings, and Mission Debriefing.
-8. **Build Verification & Compilation**:
-   - Ensure clean build, no type errors, and verified 60 FPS rendering across all 3 missions.
+- **Main Menu → Briefing Transition**: Clicking "Deploy" on an unlocked mission card sets `selectedMissionId` and transitions `gameState` to `'briefing'`.
+- **Mission End → Next Mission Briefing**: Clicking "Next Operation" on the victory debrief modal advances `selectedMissionId` to the next campaign mission and transitions `gameState` to `'briefing'`.
+- **Briefing Modal Interactions**:
+  - Clicking any loadout item tab updates the inspected weapon specification card and plays a crisp UI click.
+  - Clicking the Audio Mute button toggles `settings.isMuted` and updates `SoundManager` immediately.
+  - Clicking "Start Mission" transitions `gameState` to `'playing'`, instantiates `GameEngine`, and starts the mission's ambient audio loop.
+  - Clicking "Return to Menu" or pressing `Escape` in `'briefing'` mode returns cleanly to `gameState = 'menu'`.
+- **Settings Modal Audio Sync**:
+  - Toggling the Mute switch or dragging Master, SFX, or Ambient sliders updates `settings`, syncs `soundManager.setVolumes(...)` and `soundManager.setMuted(...)`, and triggers a throttled preview tone on the corresponding bus.

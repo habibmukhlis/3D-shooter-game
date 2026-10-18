@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for Project I.G.I. Remake featuring a 3-mission tactical campaign, Main Menu with Level Indexer and dossiers, comprehensive settings panel, enhanced physics and wall collision mechanics, and realistic obstacle bullet-occlusion ballistics.",
-  "updatedAt":  "2026-10-11T21:59:12.288740263Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "Implementation plan for integrating the dynamic MissionBriefingModal into the pre-deployment mission flow and upgrading the WebAudio API sound engine with environment-specific soundscapes, surface-aware footsteps, teletype briefing effects, and live-preview audio controls in SettingsModal.",
+  "updatedAt": "2026-10-18T00:33:39.345359659Z",
+  "requestFeedback": true,
+  "userFacing": true
 }
